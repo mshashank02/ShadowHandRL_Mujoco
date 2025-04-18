@@ -108,7 +108,7 @@ if __name__ == "__main__":
         batch_size=256,
         gamma=0.98,
         tau=0.05,
-        learning_starts=1000,  # ✅ Prevent HER crash at start
+        learning_starts=10000,  # ✅ Prevent HER crash at start
         verbose=1,
         tensorboard_log="./logs/shadowhand_ddpg_her/",
         policy_kwargs=dict(
