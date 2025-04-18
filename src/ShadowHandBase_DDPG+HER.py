@@ -39,6 +39,6 @@ model = DDPG(
 )
 
 # Train
-model.learn(total_timesteps=1_000_000)
+model.learn(total_timesteps=57_000_000)
 model.save("ShadowHandTouchSensors_RL/src/model/ddpg_her_shadowhand")
 
