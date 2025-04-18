@@ -122,11 +122,7 @@ if __name__ == "__main__":
         batch_size=256,
         gamma=0.98,
         tau=0.05,
-<<<<<<< HEAD
         learning_starts=10000,  # ✅ Prevent HER crash at start
-=======
-        learning_starts=10000,
->>>>>>> 2866c83c5911de5715c2771b9eb4043ef8949803
         verbose=1,
         tensorboard_log="./logs/shadowhand_ddpg_her/",
         policy_kwargs=dict(
