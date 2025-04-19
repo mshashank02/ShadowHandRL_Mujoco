@@ -100,7 +100,7 @@ if __name__ == "__main__":
     import multiprocessing
     multiprocessing.set_start_method("fork", force=True)
 
-    num_envs = 2
+    num_envs = 32
     train_env = SubprocVecEnv([make_env() for _ in range(num_envs)])
     eval_env = make_eval_env()
 
