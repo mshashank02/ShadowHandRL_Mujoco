@@ -6,16 +6,14 @@ import pandas as pd
 from stable_baselines3 import DDPG, HerReplayBuffer
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.vec_env import SubprocVecEnv
-from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.callbacks import EvalCallback
 from torch import nn
 from gymnasium import ObservationWrapper, ActionWrapper
 from gymnasium.spaces import Box, Dict
 
 # === Register robotics environments ===
 gym.register_envs(gymnasium_robotics)
-
 
 # === Custom Wrappers ===
 class ClipObservation(ObservationWrapper):
@@ -41,8 +39,7 @@ class ClipAction(ActionWrapper):
     def action(self, action):
         return np.clip(action, self.low, self.high)
 
-
-# === Environment Factory ===
+# === Training Environment Factory ===
 def make_env():
     def _init():
         env = gym.make("HandManipulateBlockRotateXYZ_ContinuousTouchSensors-v1")
@@ -51,37 +48,43 @@ def make_env():
         return env
     return _init
 
+# === Evaluation Environment ===
 def make_eval_env():
     env = gym.make("HandManipulateBlockRotateXYZ_ContinuousTouchSensors-v1")
     env = ClipObservation(env)
     env = ClipAction(env)
-    env = Monitor(env)  # ✅ Needed for success tracking
+    env = Monitor(env)
     return env
 
+# === Custom Evaluation Callback with Success Logging ===
+from stable_baselines3.common.callbacks import BaseCallback
 
-# === Success Evaluation Callback ===
-class SuccessEvalCallback(EvalCallback):
-    def __init__(self, eval_env, eval_freq, log_path, n_eval_episodes=10, **kwargs):
-        eval_env = Monitor(eval_env)
-        super().__init__(eval_env, eval_freq=eval_freq, log_path=log_path,
-                         n_eval_episodes=n_eval_episodes, **kwargs)
+class SuccessEvalCallback(BaseCallback):
+    def __init__(self, eval_env, eval_freq, log_path, n_eval_episodes=10, deterministic=True, verbose=0):
+        super().__init__(verbose)
+        self.eval_env = eval_env
+        self.eval_freq = eval_freq
+        self.log_path = log_path
+        self.n_eval_episodes = n_eval_episodes
+        self.deterministic = deterministic
         self.success_rates = []
 
     def _on_step(self) -> bool:
         if self.n_calls % self.eval_freq == 0:
-            _, _, ep_infos = evaluate_policy(
-                self.model,
-                self.eval_env,
-                n_eval_episodes=self.n_eval_episodes,
-                render=False,
-                deterministic=self.deterministic,
-                return_episode_rewards=True
-            )
-
-            success_values = [ep_info.get("is_success", 0.0) for ep_info in ep_infos]
-            success_rate = np.mean(success_values)
-            self.success_rates.append(success_rate)
-            print(f"✅ [Eval] Success rate at step {self.n_calls}: {success_rate:.3f}")
+            successes = []
+            for _ in range(self.n_eval_episodes):
+                obs = self.eval_env.reset()
+                done = False
+                while not done:
+                    action, _ = self.model.predict(obs, deterministic=self.deterministic)
+                    obs, _, done, info = self.eval_env.step(action)
+                    if isinstance(info, list):
+                        info = info[0]
+                    if "is_success" in info:
+                        successes.append(info["is_success"])
+            mean_success = np.mean(successes)
+            self.success_rates.append(mean_success)
+            print(f"✅ [Eval] Success rate at step {self.n_calls}: {mean_success:.3f}")
         return True
 
     def _on_training_end(self):
@@ -92,17 +95,13 @@ class SuccessEvalCallback(EvalCallback):
         os.makedirs(self.log_path, exist_ok=True)
         df.to_csv(os.path.join(self.log_path, "success_rates.csv"), index=False)
 
-
-# === Main Training Script ===
+# === Main ===
 if __name__ == "__main__":
     import multiprocessing
     multiprocessing.set_start_method("fork", force=True)
 
-    # Parallel training envs
     num_envs = 2
     train_env = SubprocVecEnv([make_env() for _ in range(num_envs)])
-
-    # Evaluation environment (single, wrapped with Monitor)
     eval_env = make_eval_env()
 
     n_actions = train_env.action_space.shape[-1]
@@ -122,7 +121,7 @@ if __name__ == "__main__":
         batch_size=256,
         gamma=0.98,
         tau=0.05,
-        learning_starts=10000,
+        learning_starts=10_000,
         verbose=1,
         tensorboard_log="./logs/shadowhand_ddpg_her/",
         policy_kwargs=dict(
@@ -133,11 +132,11 @@ if __name__ == "__main__":
 
     eval_callback = SuccessEvalCallback(
         eval_env=eval_env,
-        eval_freq=190_000,  # One epoch equivalent
+        eval_freq=190_000,
         log_path="./logs/eval_success",
         n_eval_episodes=10,
         deterministic=True,
-        render=False
+        verbose=1
     )
 
     model.learn(total_timesteps=60_000_000, callback=eval_callback)
