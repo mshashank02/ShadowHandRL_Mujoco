@@ -73,12 +73,13 @@ class SuccessEvalCallback(BaseCallback):
         if self.n_calls % self.eval_freq == 0:
             successes = []
             for _ in range(self.n_eval_episodes):
-                obs = self.eval_env.reset()
+                obs, _ = self.eval_env.reset()
                 done = False
                 while not done:
                     action, _ = self.model.predict(obs, deterministic=self.deterministic)
-                    obs, _, done, info = self.eval_env.step(action)
-                    if isinstance(info, list):
+                    obs, _, terminated, truncated, info = self.eval_env.step(action)
+                    done = terminated or truncated
+                    if isinstance(info, (list, tuple)):
                         info = info[0]
                     if "is_success" in info:
                         successes.append(info["is_success"])
@@ -86,6 +87,7 @@ class SuccessEvalCallback(BaseCallback):
             self.success_rates.append(mean_success)
             print(f"✅ [Eval] Success rate at step {self.n_calls}: {mean_success:.3f}")
         return True
+
 
     def _on_training_end(self):
         df = pd.DataFrame({
@@ -138,6 +140,9 @@ if __name__ == "__main__":
         deterministic=True,
         verbose=1
     )
-
+    eval_callback.model = model
+    _ = eval_env.reset()  # ✅ Reset so that it's ready to be stepped
+    print("🔍 Running pre-training evaluation...")
+    eval_callback._on_step()
     model.learn(total_timesteps=60_000_000, callback=eval_callback)
     model.save("ShadowHandTouchSensors_RL/src/model/ddpg_her_shadowhand_vec")
