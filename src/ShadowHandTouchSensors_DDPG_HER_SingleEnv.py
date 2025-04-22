@@ -42,7 +42,7 @@ class ClipAction(ActionWrapper):
 # === Environment Factory ===
 def make_env():
     def _init():
-        env = gym.make("HandManipulateBlockRotateXYZ_ContinuousTouchSensors-v1", reward_type="sparse")
+        env = gym.make("HandManipulateBlockRotateXYZ-v1")
         env = ClipObservation(env)
         env = ClipAction(env)
         env = Monitor(env)
@@ -89,7 +89,7 @@ class SuccessEvalCallback(BaseCallback):
     def _on_training_end(self):
         os.makedirs(self.log_path, exist_ok=True)
         df = pd.DataFrame(self.success_rates, columns=["step", "success_rate"])
-        df.to_csv(os.path.join(self.log_path, "success_rates.csv"), index=False)
+        df.to_csv(os.path.join(self.log_path, "success_rates_SingleEnv_Touch.csv"), index=False)
 
 # === Main Training Loop ===
 if __name__ == "__main__":
