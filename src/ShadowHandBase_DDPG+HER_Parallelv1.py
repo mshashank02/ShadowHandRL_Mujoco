@@ -43,8 +43,8 @@ class ClipAction(ActionWrapper):
 def make_env():
     def _init():
         env = gym.make("HandManipulateBlockRotateXYZ-v1", reward_type="sparse")
-        env = ClipObservation(env)
-        env = ClipAction(env)
+        #env = ClipObservation(env)
+        #env = ClipAction(env)
         env = Monitor(env)
         return env
     return _init
@@ -89,7 +89,7 @@ class SuccessEvalCallback(BaseCallback):
     def _on_training_end(self):
         os.makedirs(self.log_path, exist_ok=True)
         df = pd.DataFrame(self.success_rates, columns=["step", "success_rate"])
-        df.to_csv(os.path.join(self.log_path, "success_rates.csv"), index=False)
+        df.to_csv(os.path.join(self.log_path, "success_rates_noclip.csv"), index=False)
 
 # === Main Training Loop ===
 if __name__ == "__main__":
