@@ -13,10 +13,10 @@ from gymnasium import ObservationWrapper, ActionWrapper
 from gymnasium.spaces import Box, Dict
 from datetime import datetime
 
-# === Register robotics environments ===
+
 gym.register_envs(gymnasium_robotics)
 
-# === Observation and Action Clipping Wrappers ===
+
 class ClipObservation(ObservationWrapper):
     def __init__(self, env, low=-200, high=200):
         super().__init__(env)
@@ -39,17 +39,17 @@ class ClipAction(ActionWrapper):
     def action(self, action):
         return np.clip(action, self.low, self.high)
 
-# === Environment Factory ===
+
 def make_env():
     def _init():
         env = gym.make("HandManipulateBlockRotateXYZ-v1", reward_type="sparse")
-        #env = ClipObservation(env)
-        #env = ClipAction(env)
+        env = ClipObservation(env)
+        env = ClipAction(env)
         env = Monitor(env)
         return env
     return _init
 
-# === Success Rate Evaluation Callback ===
+#Success Rate 
 class SuccessEvalCallback(BaseCallback):
     def __init__(self, eval_env, eval_freq, log_path, n_eval_episodes=10, deterministic=True, save_freq=None, model_prefix="ddpg_her_shadowhand", verbose=0):
         super().__init__(verbose)
@@ -91,27 +91,27 @@ class SuccessEvalCallback(BaseCallback):
         df = pd.DataFrame(self.success_rates, columns=["step", "success_rate"])
         df.to_csv(os.path.join(self.log_path, "success_rates_noclip.csv"), index=False)
 
-# === Main Training Loop ===
+#Train
 if __name__ == "__main__":
     import multiprocessing
     multiprocessing.set_start_method("forkserver", force=True)
 
-    num_envs = 32
+    num_envs = 31
     total_timesteps = 57_000_000
-    eval_freq = 190_000
-    save_freq = 950_000  # every 5 epochs
+    eval_freq = 190_000    #1 epoch
+    save_freq = 950_000  # 5 epochs
 
-    # Create vectorized training env
+    #vector env with multi thread
     train_env = SubprocVecEnv([make_env() for _ in range(num_envs)])
 
-    # Evaluation env (not vectorized)
+    # eval
     eval_env = make_env()()
 
-    # Action noise
+    # action noise
     n_actions = train_env.action_space.shape[-1]
     action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions))
 
-    # Timestamp for log folder
+    #logging
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir = f"./logs/ddpg_her_shadowhand_{timestamp}"
     os.makedirs(log_dir, exist_ok=True)
@@ -140,7 +140,6 @@ if __name__ == "__main__":
         )
     )
 
-    # Eval callback
     eval_callback = SuccessEvalCallback(
         eval_env=eval_env,
         eval_freq=eval_freq,
