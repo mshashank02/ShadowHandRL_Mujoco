@@ -90,7 +90,7 @@ class SuccessEvalCallback(BaseCallback):
     def _on_training_end(self):
         os.makedirs(self.log_path, exist_ok=True)
         df = pd.DataFrame(self.success_rates, columns=["step", "success_rate"])
-        df.to_csv(os.path.join(self.log_path, "success_rates_base_{timestamp}.csv"), index=False)
+        df.to_csv(os.path.join(self.log_path, "success_rates_touch_{timestamp}.csv"), index=False)
 
 if __name__ == "__main__":
     import multiprocessing
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     save_freq = 950_000
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = f"./logs/ddpg_her_shadowhand_base_{timestamp}"
+    log_dir = f"./logs/ddpg_her_shadowhand_touch_{timestamp}"
     os.makedirs(log_dir, exist_ok=True)
 
     # Training env
@@ -143,11 +143,11 @@ if __name__ == "__main__":
         n_eval_episodes=50,
         deterministic=True,
         save_freq=save_freq,
-        model_prefix="ddpg_her_shadowhand"
+        model_prefix="ddpg_her_shadowhand_touch"
     )
     eval_callback.model = model
     eval_callback._on_step()
 
     model.learn(total_timesteps=total_timesteps, callback=eval_callback)
-    model.save(f"./models/ddpg_her_shadowhand_final")
-    train_env.save(f"./models/vecnormalize_train.pkl")
+    model.save(f"./model/ddpg_her_shadowhand_touch_final")
+    train_env.save(f"./models/vecnormalize_train_touch.pkl")

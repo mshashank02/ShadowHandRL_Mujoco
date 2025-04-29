@@ -1,4 +1,4 @@
-# train.py
+
 import os
 import gymnasium as gym
 import gymnasium_robotics
@@ -143,11 +143,11 @@ if __name__ == "__main__":
         n_eval_episodes=50,
         deterministic=True,
         save_freq=save_freq,
-        model_prefix="ddpg_her_shadowhand"
+        model_prefix="ddpg_her_shadowhand_base"
     )
     eval_callback.model = model
     eval_callback._on_step()
 
     model.learn(total_timesteps=total_timesteps, callback=eval_callback)
-    model.save(f"./models/ddpg_her_shadowhand_final")
-    train_env.save(f"./models/vecnormalize_train.pkl")
+    model.save(f"./model/ddpg_her_shadowhand_base_final")
+    train_env.save(f"./model/vecnormalize_train_base.pkl")
