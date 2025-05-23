@@ -15,10 +15,10 @@ from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import EvalCallback
 
 # 🔧 Global constants
-ENV_ID = "HandManipulateBlockRotateXYZ-v1"
+ENV_ID = "HandManipulateBlockRotateXYZ_ContinuousTouchSensors-v1"
 NUM_ENVS = 16
 SEED = 42
-TOTAL_TIMESTEPS = 10_000_000
+TOTAL_TIMESTEPS = 15_000_000
 
 # Logging path
 log_dir = f"./logs/tqc_her_shadowhand_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
