@@ -14,6 +14,7 @@ from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.logger import configure
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 # 🔧 Global constants
 ENV_ID = "HandManipulateBlockRotateXYZ-v1"
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     train_env = VecNormalize(train_env, norm_obs=True, norm_reward=False, clip_obs=10.)
 
     # Evaluation environment (single env)
-    eval_env = make_env(999)()
+    eval_env = DummyVecEnv([make_env(999)])
     eval_env = VecNormalize(eval_env, training=False, norm_obs=True, norm_reward=False)
 
     # Action noise
